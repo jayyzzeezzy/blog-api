@@ -1,7 +1,10 @@
+require("dotenv").config();
 const { Router } = require("express");
 const authController = require("../controllers/authControllers");
 const passport = require("passport");
 const LocalStrategy = require('passport-local').Strategy;
+const JwtStrategy = require("passport-jwt").Strategy;
+const ExtractJwt = require("passport-jwt").ExtractJwt;
 const bcrypt = require("bcryptjs");
 const db = require('../db/queries');
 
@@ -10,11 +13,17 @@ const authRouter = Router();
 /*
 * ----------------- CONFIGURE PASSPORT STRATEGIES -------------------
 */
+const options = {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: process.env.JWT_VERIFY_KEY,
+    algorithms: ['RS256'],
+};
+
 passport.use(
     new LocalStrategy(async (username, password, done) => {
         try {
             const user = await db.findUserByUsername(username);
-            console.log(user);
+            // console.log(user);
     
             if (!user) {
                 return done(null, false, { message: "Incorrect username" });
@@ -45,6 +54,23 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
+passport.use(
+    new JwtStrategy(options, async (payload, done) => {
+        try {
+            const user = await db.findUserById(payload.sub);
+            console.log(user);
+
+            if (user) {
+                return done(null, user);
+            } else {
+                return done(null, false);
+            }
+
+        } catch(err) {
+            return done(err, false);
+        }
+    })
+);
 
 /*
 * ------------------------- ROUTES --------------------------------

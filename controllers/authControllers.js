@@ -1,6 +1,7 @@
 require("dotenv").config();
 const passport = require("passport");
 const bcrypt = require("bcryptjs");
+const jsonwebtoken = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
 const db = require("../db/queries");
 
@@ -49,19 +50,58 @@ exports.postSignUp = [
         } else {
             user = await db.createUser(username, hashedPassword, false);
         }
+
+        // issue jwt
+        const expiresIn = '14d';
+        const PRIVATE_KEY = process.env.PRIVATE_KEY;
+        const payload = {
+            sub: user.id,
+            iat: Date.now()
+        };
+        const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
+        const token = "Bearer" + signedToken;
+
         return res.json({
+            success: true,
             id: user.id,
             username: user.username,
             isAuthor: user.isAuthor,
+            token,
+            expiresIn,
         });
     }
 ];
 
 exports.postLogin = async (req, res, next) => {
-    passport.authenticate('local');
-    return res.json({
-        message: "Logged in successfully",
-    });
+    passport.authenticate('local', async (err, user, info) => {
+        try {
+            if (err || !user) {
+                return res.status(400).json({ success: false, msg: "Failed to log in" });
+            }
+            req.login(user, { session: false }, async (error) => {
+                if (error) { return next(error); }
+
+                // issue jwt after log in 
+                const expiresIn = '14d';
+                const PRIVATE_KEY = process.env.PRIVATE_KEY;
+                const payload = {
+                    sub: user.id,
+                    iat: Date.now()
+                };
+                const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
+                const token = "Bearer" + signedToken;
+
+                return res.json({
+                    success: true,
+                    message: "Logged in successfully",
+                    token,
+                    expiresIn,
+                });
+            });
+        } catch (error) {
+            return res.status(400).json({ success: false, msg: "Error while authenticating" });
+        }
+    })(req, res, next);
 };
 
 exports.getLogOut = (req, res, next) => {
