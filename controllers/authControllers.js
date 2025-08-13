@@ -35,8 +35,7 @@ exports.postSignUp = [
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.json({
-                statusCode: "400",
+            return res.status(401).json({
                 errors: errors.array(),
             });
         }
@@ -75,9 +74,10 @@ exports.postSignUp = [
 exports.postLogin = async (req, res, next) => {
     passport.authenticate('local', async (err, user, info) => {
         try {
-            if (err || !user) {
-                return res.status(400).json({ success: false, msg: "Failed to log in" });
-            }
+            if (err) { return next(err); }
+
+            if (!user) { return res.status(401).json({ success: false, msg: "Incorrect username or password" }); }
+
             req.login(user, { session: false }, async (error) => {
                 if (error) { return next(error); }
 
@@ -99,7 +99,7 @@ exports.postLogin = async (req, res, next) => {
                 });
             });
         } catch (error) {
-            return res.status(400).json({ success: false, msg: "Error while authenticating" });
+            return res.status(401).json({ success: false, msg: "Error while authenticating the user" });
         }
     })(req, res, next);
 };
