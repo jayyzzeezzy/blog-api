@@ -59,7 +59,7 @@ exports.postSignUp = [
             iat: Date.now()
         };
         const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
-        const token = "Bearer" + signedToken;
+        const token = "Bearer " + signedToken;
 
         return res.json({
             success: true,
@@ -89,7 +89,7 @@ exports.postLogin = async (req, res, next) => {
                     iat: Date.now()
                 };
                 const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
-                const token = "Bearer" + signedToken;
+                const token = "Bearer " + signedToken;
 
                 return res.json({
                     success: true,

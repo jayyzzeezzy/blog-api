@@ -15,8 +15,8 @@ const authRouter = Router();
 */
 const options = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: process.env.JWT_VERIFY_KEY,
-    algorithms: ['RS256'],
+    secretOrKey: process.env.PRIVATE_KEY,
+    // algorithms: ['RS256'],
 };
 
 passport.use(
@@ -58,7 +58,7 @@ passport.use(
     new JwtStrategy(options, async (payload, done) => {
         try {
             const user = await db.findUserById(payload.sub);
-            console.log(user);
+            // console.log(user);
 
             if (user) {
                 return done(null, user);
