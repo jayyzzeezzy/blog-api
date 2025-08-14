@@ -43,31 +43,40 @@ exports.postSignUp = [
         const hashedPassword = await bcrypt.hash(password, 20);
 
         // validate secret code
-        let user;
         if (secretCode === process.env.SECRET_CODE) {
-            user = await db.createUser(username, hashedPassword, true);
+            // author account
+            const author = await db.createUser(username, hashedPassword, true);
+
+            // issue jwt
+            const expiresIn = '14d';
+            const PRIVATE_KEY = process.env.PRIVATE_KEY;
+            const payload = {
+                sub: author.id,
+                iat: Date.now()
+            };
+            const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
+            const token = "Bearer " + signedToken;
+
+            return res.status(200).json({
+                success: true,
+                id: author.id,
+                username: author.username,
+                isAuthor: author.isAuthor,
+                token,
+                expiresIn,
+            });
+
         } else {
-            user = await db.createUser(username, hashedPassword, false);
+            // reader account
+            const reader = await db.createUser(username, hashedPassword, false);
+            
+            return res.status(200).json({
+                success: true,
+                id: reader.id,
+                username: reader.username,
+                isAuthor: reader.isAuthor,
+            });
         }
-
-        // issue jwt
-        const expiresIn = '14d';
-        const PRIVATE_KEY = process.env.PRIVATE_KEY;
-        const payload = {
-            sub: user.id,
-            iat: Date.now()
-        };
-        const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
-        const token = "Bearer " + signedToken;
-
-        return res.json({
-            success: true,
-            id: user.id,
-            username: user.username,
-            isAuthor: user.isAuthor,
-            token,
-            expiresIn,
-        });
     }
 ];
 
@@ -81,23 +90,34 @@ exports.postLogin = async (req, res, next) => {
             req.login(user, { session: false }, async (error) => {
                 if (error) { return next(error); }
 
-                // issue jwt after log in 
-                const expiresIn = '14d';
-                const PRIVATE_KEY = process.env.PRIVATE_KEY;
-                const payload = {
-                    sub: user.id,
-                    iat: Date.now()
-                };
-                const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
-                const token = "Bearer " + signedToken;
+                // author account
+                if (user.isAuthor) {
+                    // issue jwt after log in 
+                    const expiresIn = '14d';
+                    const PRIVATE_KEY = process.env.PRIVATE_KEY;
+                    const payload = {
+                        sub: user.id,
+                        iat: Date.now()
+                    };
+                    const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
+                    const token = "Bearer " + signedToken;
 
-                return res.json({
-                    success: true,
-                    message: "Logged in successfully",
-                    token,
-                    expiresIn,
-                });
+                    return res.status(200).json({
+                        success: true,
+                        message: "Logged in successfully",
+                        token,
+                        expiresIn,
+                    });
+
+                // reader account
+                } else {
+                    return res.status(200).json({
+                        success: true,
+                        message: "Logged in successfully",
+                    });
+                }
             });
+
         } catch (error) {
             return res.status(401).json({ success: false, msg: "Error while authenticating the user" });
         }
