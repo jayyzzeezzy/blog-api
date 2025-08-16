@@ -45,14 +45,15 @@ exports.postSignUp = [
         // validate secret code
         if (secretCode === process.env.SECRET_CODE) {
             // author account
-            const author = await db.createUser(username, hashedPassword, true);
+            const author = await db.createUser(username, hashedPassword, true); // isAuthor: true or false?
 
-            // issue jwt
+            // issue author type jwt
             const expiresIn = '14d';
             const PRIVATE_KEY = process.env.PRIVATE_KEY;
             const payload = {
                 sub: author.id,
-                iat: Date.now()
+                iat: Date.now(),
+                isAuthor: true,
             };
             const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
             const token = "Bearer " + signedToken;
@@ -68,13 +69,26 @@ exports.postSignUp = [
 
         } else {
             // reader account
-            const reader = await db.createUser(username, hashedPassword, false);
-            
+            const reader = await db.createUser(username, hashedPassword, false); // isAuthor: true or false?
+
+            // issue reader type jwt
+            const expiresIn = '14d';
+            const PRIVATE_KEY = process.env.PRIVATE_KEY;
+            const payload = {
+                sub: reader.id,
+                iat: Date.now(),
+                isAuthor: false,
+            };
+            const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
+            const token = "Bearer " + signedToken;
+
             return res.status(200).json({
                 success: true,
                 id: reader.id,
                 username: reader.username,
                 isAuthor: reader.isAuthor,
+                token,
+                expiresIn,
             });
         }
     }
@@ -92,12 +106,13 @@ exports.postLogin = async (req, res, next) => {
 
                 // author account
                 if (user.isAuthor) {
-                    // issue jwt after log in 
+                    // issue author type jwt
                     const expiresIn = '14d';
                     const PRIVATE_KEY = process.env.PRIVATE_KEY;
                     const payload = {
                         sub: user.id,
-                        iat: Date.now()
+                        iat: Date.now(),
+                        isAuthor: true,
                     };
                     const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
                     const token = "Bearer " + signedToken;
@@ -105,15 +120,32 @@ exports.postLogin = async (req, res, next) => {
                     return res.status(200).json({
                         success: true,
                         message: "Logged in successfully",
+                        isAuthor: user.isAuthor,
                         token,
                         expiresIn,
+                        // currentUser: req.user,
                     });
 
                 // reader account
                 } else {
+                    // issue reader type jwt
+                    const expiresIn = '14d';
+                    const PRIVATE_KEY = process.env.PRIVATE_KEY;
+                    const payload = {
+                        sub: user.id,
+                        iat: Date.now(),
+                        isAuthor: false,
+                    };
+                    const signedToken = jsonwebtoken.sign(payload, PRIVATE_KEY, { expiresIn: expiresIn });
+                    const token = "Bearer " + signedToken;
+
                     return res.status(200).json({
                         success: true,
                         message: "Logged in successfully",
+                        isAuthor: user.isAuthor,
+                        token,
+                        expiresIn,
+                        // currentUser: req.user,
                     });
                 }
             });

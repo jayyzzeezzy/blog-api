@@ -4,7 +4,7 @@ const passport = require("passport");
 
 const blogRouter = Router();
 
-blogRouter.get("/blogs", blogController.getAllBlogs);
+blogRouter.get("/blogs", passport.authenticate('jwt', {session: false}), blogController.getAllBlogs);
 blogRouter.get("/blogs/:blogId", (req, res) => { res.send("get blogs/blogId") });
 blogRouter.post("/blogs/:blogId/comments", (req, res) => { res.send("post blogs/blogId/comments") });
 
