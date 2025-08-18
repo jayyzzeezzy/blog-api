@@ -7,11 +7,11 @@ const db = require("../db/queries");
 
 exports.getPublishedBlogs = async (req, res) => {
     try {
-        const blogs = await db.getPublishedBlogs();
+        const publishedBlogs = await db.getPublishedBlogs();
 
         return res.status(200).json({
             message: "GET /blogs for readers",
-            blogs,
+            publishedBlogs,
             currentUser: req.user,
         });
     } catch (error) {
@@ -72,6 +72,23 @@ exports.getAllBlogs = async (req, res) => {
     }
 };
 
+exports.getUnpublishedBlogs = async (req, res) => {
+    try {
+        if (req.user.isAuthor) {
+            const unpublished = await db.getUnpublishedBlogs();
+
+            return res.status(200).json({
+                unpublished,
+                currentUser: req.user,
+            });
+        } else {
+            return res.status(401).json({ error: "Unathorized" });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 exports.getAdminBlogByBlogId = async (req, res) => {
     try {
         if (req.user.isAuthor) {
@@ -98,6 +115,62 @@ exports.createBlog = async (req, res) => {
 
             return res.status(200).json({
                 blog,
+                currentUser: req.user,
+            });
+        } else {
+            return res.status(401).json({ error: "Unathorized" });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.deleteComment = async (req, res) => {
+    try {
+        const { commentId } = req.params;
+        if (req.user.isAuthor) {
+            const deletedComment = await db.deleteComment(commentId);
+
+            return res.status(200).json({
+                deletedComment,
+                currentUser: req.user,
+            });
+        } else {
+            return res.status(401).json({ error: "Unathorized" });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.updateBlog = async (req, res) => {
+    try {
+        const { blogId } = req.params;
+        const { title, blogBody, isPublished } = req.body;
+
+        if (req.user.isAuthor) {
+            const updatedBlog = await db.updateBlog(blogId, title, blogBody, isPublished);
+
+            return res.status(200).json({
+                updatedBlog,
+                currentUser: req.user,
+            });
+        } else {
+            return res.status(401).json({ error: "Unathorized" });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.deleteBlog = async (req, res) => {
+    try {
+        const { blogId } = req.params;
+        if (req.user.isAuthor) {
+            const deletedBlog = await db.deleteBlog(blogId);
+
+            return res.status(200).json({
+                deletedBlog,
                 currentUser: req.user,
             });
         } else {

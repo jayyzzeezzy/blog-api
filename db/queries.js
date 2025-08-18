@@ -44,6 +44,15 @@ exports.getPublishedBlogs = async () => {
     return blogs;
 };
 
+exports.getUnpublishedBlogs = async () => {
+    const blogs = await prisma.blog.findMany({
+        where: {
+            isPublished: false,
+        },
+    });
+    return blogs;
+};
+
 exports.getBlogByBlogId = async (blogId) => {
     const blog = await prisma.blog.findFirst({
         where: {
@@ -79,3 +88,35 @@ exports.createComment = async (userId, blogId, commentBody) => {
     });
     return comment;
 }
+
+exports.deleteComment = async (commentId) => {
+    const comment = await prisma.comment.delete({
+        where: {
+            id: commentId,
+        },
+    });
+    return comment;
+};
+
+exports.updateBlog = async (blogId, title, bodyText, isPublished = false) => {
+    const blog = await prisma.blog.update({
+        where: {
+            id: blogId,
+        },
+        data: {
+            title,
+            body: bodyText,
+            isPublished,
+        },
+    });
+    return blog;
+};
+
+exports.deleteBlog = async (blogId) => {
+    const blog = await prisma.blog.delete({
+        where: {
+            id: blogId,
+        },
+    });
+    return blog;
+};
