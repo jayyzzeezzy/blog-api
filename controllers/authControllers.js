@@ -25,7 +25,7 @@ const validateUser = [
     body("confirmPassword").trim().notEmpty()
         .custom((value, { req }) => value === req.body.password)
         .withMessage('Passwords do not match'),
-    body("secretCode").trim().notEmpty().optional()
+    body("secretCode").trim().optional({checkFalsy: true})
         .custom((value) => value === process.env.SECRET_CODE)
         .withMessage('Invalid code'),
 ];
