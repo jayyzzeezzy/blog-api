@@ -38,7 +38,8 @@ exports.createComment = async (req, res) => {
         const { blogId } = req.params;
         const { commentBody } = req.body;
         const userId = req.user.id;
-        const comment = await db.createComment(userId, blogId, commentBody);
+        const user = await db.findUserById(userId);
+        const comment = await db.createComment(user.username, userId, blogId, commentBody);
 
         return res.status(200).json({
             comment,

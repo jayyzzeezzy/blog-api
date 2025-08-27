@@ -78,9 +78,10 @@ exports.createBlog = async (userId, title, bodyText, isPublished = false) => {
     return blog;
 }
 
-exports.createComment = async (userId, blogId, commentBody) => {
+exports.createComment = async (username, userId, blogId, commentBody) => {
     const comment = await prisma.comment.create({
         data: {
+           username,
            ownershipId: userId,
            blogId: blogId,
            body: commentBody, 
